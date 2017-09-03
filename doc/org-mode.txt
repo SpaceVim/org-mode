@@ -1,0 +1,15 @@
+*org-mode.txt*	org-mode for SpaceVim
+spacevim.org                                                        *org-mode*
+
+==============================================================================
+CONTENTS                                                   *org-mode-contents*
+  1. Introduction.............................................|org-mode-intro|
+
+==============================================================================
+INTRODUCTION                                                  *org-mode-intro*
+
+org-mode is a filetype plugin for org file. This plugin can be used for
+keeping notes, manager TODO list, authoring and publishing documents.
+
+
+vim:tw=78:ts=8:ft=help:norl:
