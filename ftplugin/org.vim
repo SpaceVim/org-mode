@@ -1,91 +1,11 @@
-" org.vim - VimOrganizer plugin for Vim
-" -------------------------------------------------------------
-" Version: 0.30
-" Maintainer: Herbert Sitz <hesitz@gmail.com>
-" Last Change: 2011 Nov 02
-"
-" Script: http://www.vim.org/scripts/script.php?script_id=3342
-" Github page: http://github.com/hsitz/VimOrganizer 
-" Copyright: (c) 2010, 2011 by Herbert Sitz
-" The VIM LICENSE applies to all files in the
-" VimOrganizer plugin.  
-" (See the Vim copyright except read "VimOrganizer"
-" in places where that copyright refers to "Vim".)
-" http://vimdoc.sourceforge.net/htmldoc/uganda.html#license
-" No warranty, express or implied.
-" *** *** Use At-Your-Own-Risk *** ***
-"
-"Section Setup
-"if !exists('g:v')
-"    let g:v={}
-"endif
-" Calendar plugin at:
-"http://www.vim.org/scripts/script.php?script_id=52
-let b:v={}
+scriptencoding utf-8
+
 set foldmethod=manual
-let w:v={}
-let b:v.prevlev = 0
-let b:v.org_loaded=0
-let b:v.lasttext_lev=''
-let maplocalleader = ","        " Org key mappings prepend single comma
 
-let b:v.dateMatch = '\(\d\d\d\d-\d\d-\d\d\)'
-let b:v.headMatch = '^\*\+\s'
-let b:v.tableMatch = '^\(\s*|.*|\s*$\|#+TBLFM\)'
-let b:v.taglineMatch = '^\s*:\S\+:\s*$'
-let b:v.headMatchLevel = '^\(\*\)\{level}\s'
-let b:v.propMatch = '^\s*:\s*\(PROPERTIES\)'
-let b:v.propvalMatch = '^\s*:\s*\(\S*\)\s*:\s*\(\S.*\)\s*$'
-let b:v.drawerMatch = '^\s*:\(PROPERTIES\|LOGBOOK\)'
-let b:v.levelstars = 1
-let b:v.effort=['0:05','0:10','0:15','0:30','0:45','1:00','1:30','2:00','4:00']
-let b:v.tagMatch = '\(:\S*:\)\s*$'
-let b:v.mytags = ['buy','home','work','URGENT']
-let b:v.foldhi = ''
-let b:v.org_inherited_properties = ['COLUMNS']
-let b:v.org_inherited_defaults = {'CATEGORY':expand('%:t:r'),'COLUMNS':'%40ITEM %30TAGS'}
-let b:v.heading_marks = []
-let b:v.heading_marks_dict = {}
-let w:v.total_columns_width = 30
-let w:v.columnview = 0
-let w:v.org_item_len = 100 
-let w:v.org_colview_list = [] 
-let w:v.org_current_columns = ''
-let w:v.org_column_item_head = ''
-let b:v.chosen_agenda_heading = 0
-let b:v.prop_all_dict = {}
+call org#buffer#init()
+call org#windows#init()
 
-let b:v.buf_tags_static_spec = ''
-let b:v.buffer_category = ''
-if !exists('g:org_agenda_default_search_spec')
-    let g:org_agenda_default_search_spec = 'ANY_TODO'
-endif
-if exists('g:global_column_defaults') 
-    let b:v.buffer_columns = g:global_column_defaults 
-else
-    let b:v.buffer_columns = '%40ITEM %30TAGS'
-endif
-let w:sparse_on = 0
-"if exists('g:global_column_view') && g:global_column_view==1
-"    let w:v.columnview = 1
-"else
-"    let w:v.columnview = 0
-"endif
-
-let b:v.last_dict_time = 0
-let b:v.last_idict_time = 0
-let b:v.last_idict_type = 0
-let b:v.clock_to_logbook = 1
-let b:v.messages = []
-let b:v.global_cycle_levels_to_show=4
-let b:v.src_fold=0
-let b:v.foldhilines = []
-let b:v.cycle_with_text=1
-let b:v.foldcolors=['Normal','SparseSkip','Folded','WarningMsg','WildMenu','DiffAdd','DiffChange','Normal','Normal','Normal','Normal']
-let b:v.cols = []
-setlocal cfu=Mycfu
 set noswapfile
-hi MatchGroup guibg=yellow guifg=black
 
 setlocal ignorecase         " searches ignore case
 setlocal smartcase          " searches use smart case
@@ -101,21 +21,12 @@ setlocal foldcolumn=1
 setlocal tabstop=4   
 setlocal shiftwidth=4
 setlocal formatlistpat=^\\s*\\d\\+\\.\\s\\+\\\|^\\s*\\-\\s\\+
-if has("conceal")
-    set conceallevel=3
-    set concealcursor=nc
-endif
 setlocal indentexpr=
-setlocal foldexpr=OrgFoldLevel(v:lnum)
+setlocal foldexpr=org#fold#level(v:lnum)
 "setlocal iskeyword+=<
 setlocal nocindent
 setlocal iskeyword=@,39,45,48-57,_,129-255
 
-let b:v.basedate = strftime("%Y-%m-%d %a")
-let b:v.sparse_list = []
-let b:v.fold_list = []
-let b:v.suppress_indent=0
-let b:v.suppress_list_indent=0
 
 " LINE BELOW IS MAJOR IF THAT ENCOMPASSES MOST OF org.vim
 " endif is near bottom of document
@@ -123,7 +34,7 @@ let b:v.suppress_list_indent=0
 " org file is opened
 if !exists('g:org_loaded')
 " Load the checkbox plugin
-execute "runtime ftplugins/vo_checkbox.vim"
+execute 'runtime ftplugins/vo_checkbox.vim'
 
 " set calfunc depending on which calendar version installed
 if exists(':Calendar')==2 
@@ -146,40 +57,6 @@ function! OrgSID(func)
     execute 'call <SNR>'.s:SID().'_'.a:func
 endfunction
 
-if !exists('g:org_custom_column_options')
-    let g:org_custom_column_options = ['%ITEM %15DEADLINE %35TAGS', '%ITEM %35TAGS'] 
-endif
-
-if !exists('g:org_command_for_emacsclient') && (has('unix') || has('macunix'))
-    let g:org_command_for_emacsclient = 'emacsclient'
-endif
-if !exists('g:org_custom_colors')
-    let g:org_custom_colors=[]
-endif
-if !exists('g:org_tags_persistent_alist')
-    let g:org_tags_persistent_alist = ''
-endif
-if !exists('g:org_save_when_searched')
-    let g:org_save_when_searched = 0
-endif
-if !exists('g:org_capture_file')
-   let g:org_capture_file = ''
-endif
-if !exists('g:org_sort_with_todo_words')
-    let g:org_sort_with_todo_words=1
-endif
-if !exists('g:org_tags_alist')
-    let g:org_tags_alist = ''
-endif
-if !exists('g:org_agenda_include_clocktable')
-    let g:org_agenda_include_clocktable = 0
-endif
-if !exists('g:org_confirm_babel_evaluate')
-    let g:org_confirm_babel_evaluate = 0
-endif
-if !exists('g:org_agenda_window_position')
-    let g:org_agenda_window_position = 'bottom'
-endif
 if has('win32') || has('win64')
     let s:cmd_line_quote_fix = '^'
 else
@@ -2302,7 +2179,7 @@ function! s:RedoTextIndent()
 endfunction
 
 function! s:LoremIpsum()
-    let lines = ["Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?","At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat."]
+    let lines = ['Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?","At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.']
     return split(lines[s:Random(3)-1],'\%70c\S*\zs \ze')
 endfunction
 
@@ -2761,7 +2638,6 @@ function! s:OrgIfExpr()
 "    else
         return result_if_list
 "    endif
-endtry
 endfunction
 
 function! s:CheckIfExpr(line,ifexpr,...)
@@ -6271,7 +6147,7 @@ function! s:DoAllTextFold(line)
     while ((s:NextVisibleHead(a:line) != foldclosedend(a:line) + 1) 
                 \ && (foldclosedend(a:line) <= line("$"))
                 \ && (s:NextVisibleHead(a:line) != 0)
-                \ && (OrgFoldLevel(a:line) =~ '>')) 
+                \ && (org#fold#level(a:line) =~ '>')) 
                 \ || (foldclosedend(a:line) < 0)  
                 \ || ((s:NextVisibleHead(a:line) == 0) && (s:OrgSubtreeLastLine() == line('$')) && (foldclosedend(a:line)!=line('$')))
         call OrgDoSingleFold(a:line)
@@ -6292,7 +6168,7 @@ function! OrgDoSingleFold(line)
         " I know runaway can happen if at last heading in document,
         " not sure where else
         let runaway_count = 0
-        if (cur_end >= line("$")) "|| (OrgFoldLevel(cur_end+1) ==? '<0')
+        if (cur_end >= line("$")) "|| (org#fold#level(cur_end+1) ==? '<0')
             return
         endif
         if getline(cur_end+1) =~ b:v.drawerMatch
@@ -6316,118 +6192,6 @@ function! OrgDoSingleFold(line)
     endif
 endfunction
 
-function! OrgFoldLevel(line)
-    " called as foldexpr to determine the fold level of a line.
-    if g:org_folds == 0
-        return 0
-    endif
-    " STUFF to short-circuit FOR SPARSE TREE LEVELS
-    if exists('w:sparse_on') && w:sparse_on && (get(s:sparse_lines,a:line) == 1)
-        if index(b:v.sparse_list,a:line+1) >= 0
-            return '<0'
-        endif
-        let sparse = index(b:v.sparse_list,a:line)
-        if sparse >= 0
-            return '>99'
-        endif
-        let sparse = index(b:v.fold_list,a:line)
-        if sparse >= 0
-            return '<0' 
-        endif
-    endif
-
-    
-    let [l:text, l:nexttext] = getline(a:line,a:line+1)
-    
-    if l:text =~ '^\*\+\s'
-        let b:v.myAbsLevel = s:Ind(a:line)
-    elseif (b:v.lasttext_lev ># '') && (l:text !~ s:remstring) && (l:nexttext !~ '^\*\+\s') && (b:v.lastline == a:line - 1)
-    "elseif (b:v.lasttext_lev ># '') && (l:text !~ s:remstring) && (l:nexttext !~ '^\*\+\s\|^\s*:SYNOPSIS:') && (b:v.lastline == a:line - 1)
-    "if (b:v.lasttext_lev ># '') && (l:text !~ s:remstring) && (l:nexttext !~ '^\*\+\s') && (b:v.lastline == a:line - 1)
-        let b:v.lastline = a:line
-        return b:v.lasttext_lev
-    endif
-    let l:nextAbsLevel = s:Ind(a:line + 1)
-
-    if l:text =~ '^\*\+\s'
-        " we're on a heading line
-        let b:v.lasttext_lev = ''
-        "let b:v.myAbsLevel = s:Ind(a:line)
-        
-        if l:nexttext =~ b:v.drawerMatch
-            let b:v.lev = '>' . string(b:v.myAbsLevel + 4)
-        elseif l:nexttext =~ s:remstring
-            let b:v.lev = '>' . string(b:v.myAbsLevel + 6)
-        elseif (l:nexttext !~ b:v.headMatch) && (a:line != line('$'))
-            let b:v.lev = '>' . string(b:v.myAbsLevel + 3)
-        elseif l:nextAbsLevel > b:v.myAbsLevel
-            let b:v.lev = '>' . string(b:v.myAbsLevel)
-        elseif l:nextAbsLevel < b:v.myAbsLevel
-            let b:v.lev = '<' . string(l:nextAbsLevel)
-        else
-            let b:v.lev = '<' . b:v.myAbsLevel
-        endif
-        let b:v.prevlev = b:v.myAbsLevel
-
-    else    
-        "we have a text line 
-        if b:v.lastline != a:line - 1    " backup to headline to get bearings
-            if l:text =~ b:v.drawerMatch
-                let b:v.prevlev = s:Ind(s:OrgPrevHead_l(a:line))
-            else
-                "don't just back up, recalc previous lines
-                " to set variables correctly
-                let prevhead = s:OrgPrevHead_l(a:line)
-                if prevhead == 0
-                    " shortcircuit here, it's blank line prior to any head
-                    return -1
-                endif
-                let b:v.prevlev = s:Ind(prevhead)
-                let i = prevhead
-                "for item in range(prevhead,a:line-1)
-                "    call OrgFoldLevel(item)
-                "endfor
-            endif
-            "let b:v.prevlev = s:Ind(s:OrgPrevHead_l(a:line))
-        endif
-
-        if l:text =~ b:v.drawerMatch
-            let b:v.lev = '>' . string(b:v.prevlev + 4)
-        elseif (l:text =~ s:remstring) 
-            if (getline(a:line - 1) =~ b:v.headMatch) && (l:nexttext =~ s:remstring)
-                let b:v.lev =  string(b:v.prevlev + 5)
-            elseif (l:nexttext !~ s:remstring) || 
-                        \ (l:nexttext =~ b:v.drawerMatch) 
-                let b:v.lev = '<' . string(b:v.prevlev + 4)
-            else
-                let b:v.lev = b:v.prevlev + 4
-            endif
-        elseif l:text[0] != '#'
-                let b:v.lev = (b:v.prevlev + 2)
-                let b:v.lasttext_lev = b:v.lev
-        elseif b:v.src_fold  
-            if l:text =~ '^#+begin_src'
-                let b:v.lev = '>' . (b:v.prevlev + 2)
-            elseif l:text =~ '^#+end_src'
-                let b:v.lev = '<' . (b:v.prevlev + 2)
-            endif
-        else 
-            let b:v.lev = (b:v.prevlev + 2)
-        endif   
-
-        if l:nexttext =~ '^\* '
-            " this is for perf reasons, closing fold
-            " back to zero avoids foldlevel calls sometimes
-            let b:v.lev = '<0'
-        elseif l:nexttext =~ '^\*\+\s'
-            let b:v.lev = '<' . string(l:nextAbsLevel)
-        endif
-
-    endif   
-    let b:v.lastline = a:line
-    return b:v.lev    
-
-endfunction
 
 function! s:AlignSection(regex,skip,extra) range
     " skip is first part of regex, 'regex' is part to match
@@ -6948,7 +6712,7 @@ function! OrgScreenLines() range
 endfunction
 
 function! s:CurTodo(line)
-    let result = matchstr(getline(a:line),'.*\* \zs\S\+\ze ')`
+    let result = matchstr(getline(a:line),'.*\* \zs\S\+\ze ')
     if index(b:v.todoitems,curtodo) == -1
         let result = ''
     endif
@@ -8343,7 +8107,7 @@ PreLoadTags
 " in vimrc (or in future using a config line in the org file itself)
 if !exists('g:in_agenda_search') && ( &foldmethod!= 'expr') && !exists('b:v.bufloaded')
     setlocal foldmethod=expr
-    "setlocal foldexpr=OrgFoldLevel(v:lnum)
+    "setlocal foldexpr=org#fold#level(v:lnum)
     set foldlevel=1
     let b:v.bufloaded=1
 else
@@ -8407,4 +8171,5 @@ if exists('*OrgCustomSettings')
     call OrgCustomSettings()
 endif
 
-" vim600: set tabstop=4 shiftwidth=4 smarttab expandtab fdm=expr foldexpr=getline(v\:lnum)=~'^"Section'?0\:getline(v\:lnum+1)=~'^func'?'<0'\:'1':
+
+" vim:set nofoldenable:
