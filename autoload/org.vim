@@ -221,3 +221,25 @@ function! s:ProcessCapture()
    
 endfunction
 
+function! s:Pre0(s)
+    return repeat('0',2 - len(a:s)) . a:s
+endfunction
+function! org#randomData()
+
+    let date = string((2009 + org#util#random(3) - 1)).'-'.s:Pre0(org#util#random(12)).'-'.s:Pre0(org#util#random(28))
+    let dstring = ''
+    if org#util#random(3) == 3
+        let dstring = date. ' ' . calutil#dayname(date)
+    else
+        let dstring = date. ' ' . calutil#dayname(date).' '.s:Pre0(org#util#random(23)).':'.s:Pre0((org#util#random(12)-1)*5)
+    endif
+    if org#util#random(6) == 6
+        let dstring .= ' +'.org#util#random(4).['d','w','m'][org#util#random(3)-1]
+    endif
+    return '<'.dstring.'>'
+    "if a:date_type != ''
+    "    call s:SetProp(a:date_type,date)
+    "else
+    "    silent execute "normal A".date
+    "endif
+endfunction

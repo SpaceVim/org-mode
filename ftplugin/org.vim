@@ -2180,43 +2180,18 @@ endfunction
 
 function! s:LoremIpsum()
     let lines = ['Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?","At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.']
-    return split(lines[s:Random(3)-1],'\%70c\S*\zs \ze')
+    return split(lines[org#util#random(3)-1],'\%70c\S*\zs \ze')
 endfunction
 
-"Section A New Section Here
-
-function! s:Random(range)
-    "returns random integer from 1 to range
-    return (Rndm() % a:range) + 1
-endfunction
-
-function! s:RandomDate()
-    let date = string((2009 + s:Random(3) - 1)).'-'.s:Pre0(s:Random(12)).'-'.s:Pre0(s:Random(28))
-    let dstring = ''
-    if s:Random(3) == 3
-        let dstring = date. ' ' . calutil#dayname(date)
-    else
-        let dstring = date. ' ' . calutil#dayname(date).' '.s:Pre0(s:Random(23)).':'.s:Pre0((s:Random(12)-1)*5)
-    endif
-    if s:Random(6) == 6
-        let dstring .= ' +'.s:Random(4).['d','w','m'][s:Random(3)-1]
-    endif
-    return '<'.dstring.'>'
-    "if a:date_type != ''
-    "    call s:SetProp(a:date_type,date)
-    "else
-    "    silent execute "normal A".date
-    "endif
-endfunction
 function! s:SetRandomDate(...)
     call s:OrgGetHead()
     if a:0 == 1
         let date_type = a:1
     else
-        let date_type = ['DEADLINE','TIMESTAMP','SCHEDULED'][s:Random(3)-1]
+        let date_type = ['DEADLINE','TIMESTAMP','SCHEDULED'][org#util#random(3)-1]
     endif
     if date_type != ''
-        call s:SetProp(date_type,s:RandomDate())
+        call s:SetProp(date_type,org#randomData())
     else
         let hl = line('.')
         let dmatch = match(getline(hl),'\s*<\d\d\d\d-\d\d-\d\d')
@@ -2224,13 +2199,13 @@ function! s:SetRandomDate(...)
             let dmatch = dmatch - 1
             call setline(hl,getline(hl)[:dmatch])
         endif
-        let newd = s:RandomDate()
+        let newd = org#randomData()
         execute hl
         execute "normal A ". newd
     endif
 endfunction
 function! s:SetRandomTodo()
-    let newtodo = b:v.todoitems[s:Random(3)-1]
+    let newtodo = b:v.todoitems[org#util#random(3)-1]
     if index(b:v.todoitems,matchstr(getline(line('.')),'^\*\+ \zs\S*\ze ')) >= 0
         call setline(line('.'),matchstr(getline(line('.')),'^\*\+ ') . newtodo . 
                     \    ' '. matchstr(getline(line('.')),'^\*\+ \S* \zs.*')) 
